@@ -17,5 +17,11 @@ namespace SixLabors.ImageSharp.Formats.Tga
         /// Run length encoding is used.
         /// </summary>
         RunLength,
+
+        /// <summary>
+        /// Run length encoding but not cross multiple scan lines is used.
+        /// </summary>
+        RunLengthWithoutCrossScanLine,
+
     }
 }

@@ -119,7 +119,7 @@ namespace SixLabors.ImageSharp.Formats.Tga
 
             stream.Write(buffer, 0, TgaFileHeader.Size);
 
-            if (this.compression is TgaCompression.RunLength)
+            if (this.compression is TgaCompression.RunLength || this.compression is TgaCompression.RunLengthWithoutCrossScanLine)
             {
                 this.WriteRunLengthEncodedImage(stream, image.Frames.RootFrame);
             }
@@ -233,11 +233,36 @@ namespace SixLabors.ImageSharp.Formats.Tga
             byte equalPixelCount = 0;
             bool firstRow = true;
             TPixel startPixel = pixels[xStart, yStart];
-            for (int y = yStart; y < pixels.Height; y++)
+            if (this.compression is TgaCompression.RunLength)
             {
-                for (int x = firstRow ? xStart + 1 : 0; x < pixels.Width; x++)
+                for (int y = yStart; y < pixels.Height; y++)
                 {
-                    TPixel nextPixel = pixels[x, y];
+                    for (int x = firstRow ? xStart + 1 : 0; x < pixels.Width; x++)
+                    {
+                        TPixel nextPixel = pixels[x, y];
+                        if (startPixel.Equals(nextPixel))
+                        {
+                            equalPixelCount++;
+                        }
+                        else
+                        {
+                            return equalPixelCount;
+                        }
+
+                        if (equalPixelCount >= 127)
+                        {
+                            return equalPixelCount;
+                        }
+                    }
+
+                    firstRow = false;
+                }
+            }
+            else if (this.compression is TgaCompression.RunLengthWithoutCrossScanLine)
+            {
+                for (int x = xStart + 1; x < pixels.Width; x++)
+                {
+                    TPixel nextPixel = pixels[x, yStart];
                     if (startPixel.Equals(nextPixel))
                     {
                         equalPixelCount++;
@@ -252,8 +277,6 @@ namespace SixLabors.ImageSharp.Formats.Tga
                         return equalPixelCount;
                     }
                 }
-
-                firstRow = false;
             }
 
             return equalPixelCount;
